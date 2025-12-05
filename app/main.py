@@ -14,3 +14,13 @@ app = FastAPI(
 
 # Crear las tablas al inicio
 create_tables()
+
+# Modelo Pydantic para la API
+class Note(BaseModel):
+    id: int
+    title: str
+    content: str
+
+class NoteCreate(BaseModel):
+    title: str
+    content: str
