@@ -24,3 +24,7 @@ class Note(BaseModel):
 class NoteCreate(BaseModel):
     title: str
     content: str
+
+# Base de datos en memoria como fallback si PostgreSQL no esta disponible
+notes_db: List[Note] = []
+USE_MEMORY_DB = os.getenv("USE_MEMORY_DB", "false").lower() == "true"
