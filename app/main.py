@@ -28,3 +28,27 @@ class NoteCreate(BaseModel):
 # Base de datos en memoria como fallback si PostgreSQL no esta disponible
 notes_db: List[Note] = []
 USE_MEMORY_DB = os.getenv("USE_MEMORY_DB", "false").lower() == "true"
+
+@app.get("/health")
+def health_check(db: Session = Depends(get_db)):
+    if USE_MEMORY_DB or db is None:
+        return {"status": "ok", "database": "memory"}
+    
+    try:
+        db.execute(text("SELECT 1"))
+        return {"status": "ok", "database": "postgresql"}
+    except Exception as e:
+        print(f"Database health check error: {e}")
+        return {"status": "ok", "database": "memory"}
+
+@app.get("/notes", response_model=List[Note])
+def get_notes(db: Session = Depends(get_db)):
+    if USE_MEMORY_DB or db is None:
+        return notes_db
+    
+    try:
+        db_notes = db.query(NoteDB).all()
+        return [Note(id=note.id, title=note.title, content=note.content) for note in db_notes]
+    except Exception as e:
+        print(f"Database error: {e}")
+        return notes_db
