@@ -19,3 +19,11 @@ except Exception as e:
     SessionLocal = None
 
 Base = declarative_base()
+
+# Modelo SQLAlchemy
+class NoteDB(Base):
+    __tablename__ = "notes"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, index=True)
+    content = Column(Text)
