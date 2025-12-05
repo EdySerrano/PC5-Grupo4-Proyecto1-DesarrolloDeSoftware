@@ -27,3 +27,26 @@ class NoteDB(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, index=True)
     content = Column(Text)
+
+# Crear las tablas
+def create_tables():
+    if engine:
+        try:
+            Base.metadata.create_all(bind=engine)
+        except Exception as e:
+            print(f"Advertencia: No se pudo crear las tablas: {e}")
+
+# Dependency para obtener la sesiOn de DB
+def get_db():
+    if SessionLocal:
+        db = SessionLocal()
+        try:
+            yield db
+        except Exception as e:
+            print(f"Database error: {e}")
+            yield None
+        finally:
+            if db:
+                db.close()
+    else:
+        yield None
