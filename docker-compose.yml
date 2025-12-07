@@ -12,6 +12,8 @@ services:
       - USE_MEMORY_DB=false
     volumes:
       - ./app:/app/app
+    networks:
+      - backend
 
   db:
     image: postgres:15-alpine
@@ -23,6 +25,12 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
+    networks:
+      - backend
 
 volumes:
   postgres_data:
+
+networks:
+  backend:
+    driver: bridge
