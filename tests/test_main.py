@@ -1,12 +1,16 @@
 import os
 
-import pytest
-from fastapi.testclient import TestClient
-
-from app.main import app
 
 os.environ["USE_MEMORY_DB"] = "true"
 
+
+from fastapi.testclient import TestClient
+from app.main import app, get_db
+
+def override_get_db():
+    yield None
+
+app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 
 
@@ -50,7 +54,6 @@ def test_obtener_nota_por_id():
     assert nota["content"] == "Contenido Especifico"
 
 
-@pytest.mark.xfail(reason="Conexion a DB deshabilitada")
 def test_obtener_nota_inexistente():
     # Intentar obtener una nota que no existe
     response = client.get("/notes/9999")
