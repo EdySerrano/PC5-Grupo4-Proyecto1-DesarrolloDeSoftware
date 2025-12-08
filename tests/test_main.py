@@ -1,14 +1,17 @@
 import os
 from unittest.mock import MagicMock, patch
+
+from fastapi.testclient import TestClient
+
 import app.main as main_module
+from app.main import app, get_db
 
 os.environ["USE_MEMORY_DB"] = "true"
 
-from fastapi.testclient import TestClient
-from app.main import app, get_db
 
 def override_get_db():
     yield None
+
 
 app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
@@ -63,19 +66,19 @@ def test_obtener_nota_inexistente():
 
 def test_salud_db_con_error(monkeypatch):
     monkeypatch.setattr(main_module, "USE_MEMORY_DB", False)
-    
+
     with patch("app.main.get_db") as mock_get_db:
         mock_db_session = MagicMock()
         mock_db_session.execute.side_effect = Exception("DB Error")
         mock_get_db.return_value = iter([mock_db_session])
-        
+
         original_overrides = app.dependency_overrides.copy()
         app.dependency_overrides = {}
-        
+
         response = client.get("/health")
-        
+
         app.dependency_overrides = original_overrides
-        
+
         assert response.status_code == 200
         assert response.json()["database"] == "memory"
 
@@ -87,10 +90,11 @@ def test_logica_db():
 
         generator = get_db()
         db_instance = next(generator)
-        
+
         assert db_instance == mock_session
-        generator.close() 
+        generator.close()
         mock_session.close.assert_called_once()
+
 
 def test_crear_nota_postgres_excepcion(monkeypatch):
     monkeypatch.setattr(main_module, "USE_MEMORY_DB", False)
@@ -98,10 +102,10 @@ def test_crear_nota_postgres_excepcion(monkeypatch):
         mock_session = MagicMock()
         mock_session.add.side_effect = Exception("Commit Fail")
         mock_get_db.return_value = iter([mock_session])
-        
+
         orig = app.dependency_overrides.copy()
         app.dependency_overrides = {}
         response = client.post("/notes", json={"title": "Err", "content": "Err"})
         app.dependency_overrides = orig
-        
+
         assert response.status_code == 200

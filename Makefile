@@ -1,5 +1,6 @@
 # Variables de entorno
-
+EVIDENCE_DIR = .evidence
+IMAGE_NAME = myapp:latest
 # Flags comunes para pytest (puedes ampliarlas)
 PYTEST_FLAGS ?= -q -v
 PY_WARNINGS  ?= ignore::DeprecationWarning
@@ -69,3 +70,19 @@ clean: ## Elimina archivos temporales, caches, etc.
 	# ruff
 	rm -rf .ruff_cache 2>/dev/null || true
 	@echo "Limpieza completa."
+
+.PHONY: coverage_reporte
+coverage_reporte: 
+	@mkdir -p $(EVIDENCE_DIR)
+	@echo "Ejecutando cobertura..."
+	PYTHONWARNINGS="$(PY_WARNINGS)" pytest --cov=app --cov-report=term-missing > $(EVIDENCE_DIR)/ci-report.txt
+	@echo "Reporte de cobertura guardado en $(EVIDENCE_DIR)/ci-report.txt"
+
+.PHONY: evidence
+evidence: coverage_reporte lint ## Genera SBOM (Syft) y Escaneo (Trivy)
+	@mkdir -p $(EVIDENCE_DIR)
+	@echo "Generando SBOM con Syft..."
+	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(PWD)/$(EVIDENCE_DIR):/evidence anchore/syft $(IMAGE_NAME) -o json > $(EVIDENCE_DIR)/sbom.json
+	@echo "Ejecutando escaneo con Trivy..."
+	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(PWD)/$(EVIDENCE_DIR):/evidence ghcr.io/aquasecurity/trivy:latest image --format json --output /evidence/trivy-report.json $(IMAGE_NAME)
+	@echo "Evidencias completadas en $(EVIDENCE_DIR)/"
