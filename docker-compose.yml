@@ -6,12 +6,15 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/notes_db
       - USE_MEMORY_DB=false
     volumes:
       - ./app:/app/app
+    networks:
+      - backend
 
   db:
     image: postgres:15-alpine
@@ -21,8 +24,22 @@ services:
       POSTGRES_DB: notes_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5433:5432"
+    networks:
+      - backend
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d notes_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
+
+networks:
+  backend:
+    driver: bridge
