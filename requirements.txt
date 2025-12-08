@@ -6,3 +6,5 @@ httpx
 ruff
 psycopg2-binary
 sqlalchemy
+flake8
+pytest-cov

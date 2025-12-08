@@ -1,19 +1,22 @@
-from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel
-from typing import List, Optional
-from sqlalchemy.orm import Session
-from sqlalchemy import text
-from app.database import get_db, create_tables, NoteDB
 import os
+from typing import List
+
+from fastapi import Depends, FastAPI, HTTPException
+from pydantic import BaseModel
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from app.database import NoteDB, create_tables, get_db
 
 app = FastAPI(
     title="Sistema de Gestión de Notas",
     description="API simple para gestión de notas - Práctica Calificada 5",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # Crear las tablas al inicio
 create_tables()
+
 
 # Modelo Pydantic para la API
 class Note(BaseModel):
@@ -21,20 +24,23 @@ class Note(BaseModel):
     title: str
     content: str
 
+
 class NoteCreate(BaseModel):
     title: str
     content: str
 
+
 # Base de datos en memoria como fallback si PostgreSQL no esta disponible
 notes_db: List[Note] = []
 USE_MEMORY_DB = os.getenv("USE_MEMORY_DB", "false").lower() == "true"
+
 
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)):
     # Verificar si tenemos conexión a PostgreSQL
     if USE_MEMORY_DB or db is None:
         return {"status": "ok", "database": "memory"}
-    
+
     try:
         # Probar una consulta simple para verificar la conexion
         db.execute(text("SELECT 1"))
@@ -43,18 +49,23 @@ def health_check(db: Session = Depends(get_db)):
         print(f"Database health check error: {e}")
         return {"status": "ok", "database": "memory"}
 
+
 @app.get("/notes", response_model=List[Note])
 def get_notes(db: Session = Depends(get_db)):
     if USE_MEMORY_DB or db is None:
         return notes_db
-    
+
     try:
         db_notes = db.query(NoteDB).all()
-        return [Note(id=note.id, title=note.title, content=note.content) for note in db_notes]
+        return [
+            Note(id=note.id, title=note.title, content=note.content)
+            for note in db_notes
+        ]
     except Exception as e:
         print(f"Database error: {e}")
         # Fallback a memoria si hay problemas con la DB
         return notes_db
+
 
 @app.post("/notes", response_model=Note)
 def create_note(note: NoteCreate, db: Session = Depends(get_db)):
@@ -64,7 +75,7 @@ def create_note(note: NoteCreate, db: Session = Depends(get_db)):
         new_note = Note(id=new_id, title=note.title, content=note.content)
         notes_db.append(new_note)
         return new_note
-    
+
     try:
         # Crear en PostgreSQL
         db_note = NoteDB(title=note.title, content=note.content)
@@ -80,6 +91,7 @@ def create_note(note: NoteCreate, db: Session = Depends(get_db)):
         notes_db.append(new_note)
         return new_note
 
+
 @app.get("/notes/{note_id}", response_model=Note)
 def get_note_detail(note_id: int, db: Session = Depends(get_db)):
     if USE_MEMORY_DB or db is None:
@@ -87,7 +99,7 @@ def get_note_detail(note_id: int, db: Session = Depends(get_db)):
             if note.id == note_id:
                 return note
         raise HTTPException(status_code=404, detail="Note not found")
-    
+
     try:
         db_note = db.query(NoteDB).filter(NoteDB.id == note_id).first()
         if db_note:
