@@ -1,0 +1,19 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0
+rootdir: /home/germain/archivos/pc5Sprint2/PC5-Grupo4-Proyecto1-DesarrolloDeSoftware
+plugins: cov-7.0.0, anyio-4.12.0
+collected 7 items
+
+tests/test_main.py .......                                               [100%]
+
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.12.3-final-0 ________________
+
+Name              Stmts   Miss  Cover   Missing
+-----------------------------------------------
+app/__init__.py       0      0   100%
+app/database.py      37      8    78%   15, 20-23, 53-54, 59
+app/main.py          75     20    73%   47, 58-67, 84-85, 103-114
+-----------------------------------------------
+TOTAL               112     28    75%
+============================== 7 passed in 31.45s ==============================
