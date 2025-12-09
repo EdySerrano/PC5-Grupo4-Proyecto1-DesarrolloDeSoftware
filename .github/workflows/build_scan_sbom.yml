@@ -12,13 +12,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         
       - name: Build and Generate Evidence
         run: make full-evidence
 
       - name: Upload Evidence
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: evidence
+          name: security-evidence-${{ github.sha }}
           path: .evidence/
+          retention-days: 30
