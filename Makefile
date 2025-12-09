@@ -78,11 +78,34 @@ coverage_reporte:
 	PYTHONWARNINGS="$(PY_WARNINGS)" pytest --cov=app --cov-report=term-missing > $(EVIDENCE_DIR)/ci-report.txt
 	@echo "Reporte de cobertura guardado en $(EVIDENCE_DIR)/ci-report.txt"
 
+.PHONY: build
+build: ## Construye la imagen Docker
+	@echo "Construyendo imagen $(IMAGE_NAME)..."
+	@docker build -t $(IMAGE_NAME) . || (echo "Error en build" && exit 1)
+	@echo "Imagen $(IMAGE_NAME) construida exitosamente"
+
 .PHONY: evidence
 evidence: coverage_reporte lint ## Genera SBOM (Syft) y Escaneo (Trivy)
 	@mkdir -p $(EVIDENCE_DIR)
-	@echo "Generando SBOM con Syft..."
-	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(PWD)/$(EVIDENCE_DIR):/evidence anchore/syft $(IMAGE_NAME) -o json > $(EVIDENCE_DIR)/sbom.json
-	@echo "Ejecutando escaneo con Trivy..."
-	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(PWD)/$(EVIDENCE_DIR):/evidence ghcr.io/aquasecurity/trivy:latest image --format json --output /evidence/trivy-report.json $(IMAGE_NAME)
+	@echo "Verificando que la imagen $(IMAGE_NAME) existe"
+	@docker image inspect $(IMAGE_NAME) >/dev/null 2>&1 || \
+		(echo "Imagen $(IMAGE_NAME) no encontrada. Ejecutar 'make build' primero" && exit 1)
+	@echo "Generando SBOM con Syft"
+	@docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(PWD)/$(EVIDENCE_DIR):/evidence anchore/syft $(IMAGE_NAME) -o json > $(EVIDENCE_DIR)/sbom.json || \
+		(echo "Error generando SBOM" && exit 1)
+	@echo "SBOM generado: $(EVIDENCE_DIR)/sbom.json"
+	@echo "Ejecutando escaneo de seguridad con Trivy..."
+	@docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(PWD)/$(EVIDENCE_DIR):/evidence ghcr.io/aquasecurity/trivy:latest image --format json --output /evidence/trivy-report.json $(IMAGE_NAME) || \
+		(echo "Error en escaneo Trivy" && exit 1)
+	@echo "Scan completado: $(EVIDENCE_DIR)/trivy-report.json"
 	@echo "Evidencias completadas en $(EVIDENCE_DIR)/"
+
+.PHONY: full-evidence
+full-evidence: build evidence ## Pipeline completo: Build + Test + Lint + Evidence
+	@echo "Pipeline de evidencias completado exitosamente"
+	@echo "Archivos generados:"
+	@ls -lh $(EVIDENCE_DIR)/ | tail -n +2
+	@echo "Resumen:"
+	@echo "  - Cobertura: $(EVIDENCE_DIR)/ci-report.txt"
+	@echo "  - SBOM: $$(wc -l < $(EVIDENCE_DIR)/sbom.json) líneas"
+	@echo "  - Vulnerabilidades: $$(jq '[.Results[]?.Vulnerabilities[]?] | length' $(EVIDENCE_DIR)/trivy-report.json 2>/dev/null || echo 'N/A')"
