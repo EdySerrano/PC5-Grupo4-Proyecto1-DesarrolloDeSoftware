@@ -14,6 +14,10 @@ spec:
       labels:
         app: notes
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
       containers:
       - name: notes-api
         image: myapp:latest
@@ -25,3 +29,15 @@ spec:
             name: notes-config
         - secretRef:
             name: notes-secret
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp-volume
+      volumes:
+      - name: tmp-volume
+        emptyDir: {}
