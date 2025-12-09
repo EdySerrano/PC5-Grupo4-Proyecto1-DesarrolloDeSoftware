@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notes-app
+  labels:
+    app: notes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notes
+  template:
+    metadata:
+      labels:
+        app: notes
+    spec:
+      containers:
+      - name: notes-api
+        image: myapp:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: notes-config
+        - secretRef:
+            name: notes-secret
