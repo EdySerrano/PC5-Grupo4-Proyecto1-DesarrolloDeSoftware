@@ -11,7 +11,7 @@
 ## Descripción del Proyecto
 **Proyecto 1 - "Local Secure Stack para notas de estudiantes"**
 
-Sistema de Gestión de Notas desarrollado con FastAPI y PostgreSQL. El proyecto incluye configuraciones para Docker Compose y Kubernetes, permitiendo despliegues flexibles en diferentes entornos.
+Local Secure Stack para Notas de Estudiantes consiste en el desarrollo de un servicio backend seguro para la gestión de notas universitarias, implementado con Python y FastAPI, con endpoints para salud y manejo de notas, respaldado por una base de datos en contenedor (PostgreSQL o SQLite). Todo el sistema se despliega mediante Docker y Docker Compose, integrando un pipeline DevSecOps con GitHub Actions que ejecuta pruebas, análisis de calidad, construcción de imágenes, escaneo de vulnerabilidades con Trivy o Grype y generación de SBOM con Syft, almacenando evidencias en la carpeta .evidence/. Además, el proyecto permite su despliegue en Kubernetes usando Minikube o Kind, incorporando buenas prácticas de seguridad como contenedores no-root, aislamiento de red y verificación automática del servicio mediante el endpoint /health.
 
 
 ## Tecnologías Utilizadas
@@ -374,3 +374,39 @@ curl http://localhost:8080/notes
 Las notas deben seguir existiendo - Lo que confirma que PostgreSQL está persistiendo los datos correctamente.
 
 ---
+
+
+## Ramas:
+### *Sprint-1:*
+- *Serrano Edy:* [Edy-Serrano/Backend](https://github.com/EdySerrano/PC5-Grupo4-Proyecto1-DesarrolloDeSoftware/tree/Edy-Serrano/Backend)
+- *Serrano Edy:* [Edy-Serrano/API](https://github.com/EdySerrano/PC5-Grupo4-Proyecto1-DesarrolloDeSoftware/tree/Edy-Serrano/API)
+- *Hinojosa Frank:* [Frank-Hinojosa/dockerfile-basico](https://github.com/EdySerrano/PC5-Grupo4-Proyecto1-DesarrolloDeSoftware/tree/Frank-Hinojosa/dockerfile-basico)
+- *Hinojosa Frank:* [Frank-Hinojosa/docker-compose-basico](https://github.com/EdySerrano/PC5-Grupo4-Proyecto1-DesarrolloDeSoftware/tree/Frank-Hinojosa/docker-compose-basico)
+- *Choquecambi Germain:* [Germain-Choquechambi/tests-api](https://github.com/EdySerrano/PC5-Grupo4-Proyecto1-DesarrolloDeSoftware/tree/Germain-Choquechambi/tests-api)
+- *Choquecambi Germain:* [Germain-Choquechambi/agregar-script-verificacion-bd](https://github.com/EdySerrano/PC5-Grupo4-Proyecto1-DesarrolloDeSoftware/tree/Germain-Choquechambi/agregar-script-verificacion-bd)
+
+**Video:** [Sprint-1](https://www.youtube.com/watch?v=cSzPPS0TC8c)
+
+### *Sprint-2:*
+- *Serrano Edy:* [Edy-Serrano/Seguridad-Docker](https://github.com/EdySerrano/PC5-Grupo4-Proyecto1-DesarrolloDeSoftware/tree/Edy-Serrano/Seguridad-Docker)
+- *Hinojosa Frank:* [Frank-Hinojosa/pipeline-ci-cd](https://github.com/EdySerrano/PC5-Grupo4-Proyecto1-DesarrolloDeSoftware/tree/Frank-Hinojosa/pipeline-ci-cd)
+- *Choquecambi Germain:* [Germain-Choquechambi/automatizacion-evidencias](https://github.com/EdySerrano/PC5-Grupo4-Proyecto1-DesarrolloDeSoftware/tree/Germain-Choquechambi/automatizacion-evidencias)
+- *Hinojosa Frank:* [Frank-Hinojosa/build-scan-sbom](https://github.com/EdySerrano/PC5-Grupo4-Proyecto1-DesarrolloDeSoftware/tree/Frank-Hinojosa/build-scan-sbom)
+
+**Video:** [Sprint-2](https://www.youtube.com/watch?v=Gno9eCs62_E)
+
+### *Sprint-3:*
+- *Serrano Edy:* [Edy-Serrano/API-Service](https://github.com/EdySerrano/PC5-Grupo4-Proyecto1-DesarrolloDeSoftware/tree/Edy-Serrano/API-Service)
+- *Hinojosa Frank:* [Frank-Hinojosa/k8s-makefile-integracion](https://github.com/EdySerrano/PC5-Grupo4-Proyecto1-DesarrolloDeSoftware/tree/Frank-Hinojosa/k8s-makefile-integracion)
+- *Choquecambi Germain:* [Germain-Choquechambi/verificacion-despliegue](https://github.com/EdySerrano/PC5-Grupo4-Proyecto1-DesarrolloDeSoftware/tree/Germain-Choquechambi/verificacion-despliegue)
+
+**Video:** [Sprint-3](https://www.youtube.com/watch?v=u4o4xIsdYLo)
+
+### *Video Demo Final:*
+- *Video:* [Demo final](https://www.youtube.com/watch?v=poongRMmJVY)
+
+## Tablero Kanban:
+En este proyecto de utilizo el Tablero Kanban lo que facilito el registro y procedimiento en cada etapa del desarrollo el proyecto, en donde se registraron [Las historias de usuario](https://github.com/EdySerrano/PC5-Grupo4-Proyecto1-DesarrolloDeSoftware/issues?q=is%3Aissue%20state%3Aclosed) especificando lo que se va implementar y luego de eso realizar el [Pull Request](https://github.com/EdySerrano/PC5-Grupo4-Proyecto1-DesarrolloDeSoftware/pulls?q=is%3Apr+is%3Aclosed) para la revision de los demas integrantes y asi practicar una metodologia Agil.
+
+Link Tablero Kanban : [ PC5-Proyecto 1: "Local Secure Stack para notas de estudiantes"](https://github.com/users/EdySerrano/projects/12)
+
