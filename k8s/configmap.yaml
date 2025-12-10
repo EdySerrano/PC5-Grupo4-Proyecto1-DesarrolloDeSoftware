@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notes-config
+data:
+  USE_MEMORY_DB: "false"
+  DATABASE_URL: "postgresql://user:password@postgres:5432/notes_db"
