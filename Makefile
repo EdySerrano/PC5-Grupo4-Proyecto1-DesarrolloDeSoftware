@@ -1,6 +1,9 @@
 # Variables de entorno
 EVIDENCE_DIR = .evidence
 IMAGE_NAME = myapp:latest
+K8S_NAMESPACE = default
+K8S_DIR = k8s
+PORT_FORWARD_PORT = 8080
 # Flags comunes para pytest (puedes ampliarlas)
 PYTEST_FLAGS ?= -q -v
 PY_WARNINGS  ?= ignore::DeprecationWarning
@@ -109,3 +112,121 @@ full-evidence: build evidence ## Pipeline completo: Build + Test + Lint + Eviden
 	@echo "  - Cobertura: $(EVIDENCE_DIR)/ci-report.txt"
 	@echo "  - SBOM: $$(wc -l < $(EVIDENCE_DIR)/sbom.json) líneas"
 	@echo "  - Vulnerabilidades: $$(jq '[.Results[]?.Vulnerabilities[]?] | length' $(EVIDENCE_DIR)/trivy-report.json 2>/dev/null || echo 'N/A')"
+
+.PHONY: k8s-start
+k8s-start: ## Inicia Minikube
+	@echo "Iniciando Minikube"
+	minikube start
+	@echo "Minikube iniciado exitosamente"
+	@minikube status
+
+.PHONY: k8s-stop
+k8s-stop: ## Detiene Minikube
+	@echo "Deteniendo Minikube"
+	minikube stop
+	@echo "Minikube detenido"
+
+.PHONY: k8s-delete
+k8s-delete: ## Elimina el cluster de Minikube
+	@echo "Esto eliminará completamente el cluster de Minikube"
+	@read -p "¿Estás seguro? [y/N]: " confirm && [ "$$confirm" = "y" ] || exit 1
+	minikube delete
+	@echo "Cluster eliminado"
+
+.PHONY: k8s-status
+k8s-status: ## Muestra el estado de Minikube
+	@minikube status
+
+.PHONY: k8s-dashboard
+k8s-dashboard: ## Abre el dashboard de Kubernetes
+	@echo "Abriendo dashboard de Kubernetes"
+	minikube dashboard
+
+.PHONY: k8s-build
+k8s-build: ## Construye la imagen en el daemon de Minikube
+	@echo "Configurando Docker para usar Minikube"
+	@eval $$(minikube docker-env) && docker build -t $(IMAGE_NAME) .
+	@echo "Imagen $(IMAGE_NAME) construida en Minikube"
+	@eval $$(minikube docker-env) && docker images | grep myapp
+
+.PHONY: k8s-deploy
+k8s-deploy: ## Despliega toda la aplicación en Kubernetes
+	@echo "Desplegando aplicación en Kubernetes"
+	@echo "[1/9] Aplicando Secret..."
+	kubectl apply -f $(K8S_DIR)/secret.yaml
+	@echo "[2/9] Aplicando ConfigMap..."
+	kubectl apply -f $(K8S_DIR)/configmap.yaml
+	@echo "[3/9] Creando PersistentVolumeClaim..."
+	kubectl apply -f $(K8S_DIR)/postgres-pvc.yaml
+	@echo "[4/9] Desplegando PostgreSQL..."
+	kubectl apply -f $(K8S_DIR)/postgres-deployment.yaml
+	@echo "[5/9] Creando Service de PostgreSQL..."
+	kubectl apply -f $(K8S_DIR)/postgres-service.yaml
+	@echo "[6/9] Esperando a que PostgreSQL esté listo (timeout: 120s)..."
+	kubectl wait --for=condition=ready pod -l app=postgres --timeout=120s || \
+		(echo "PostgreSQL no está listo. Ver logs con: make k8s-logs-postgres" && exit 1)
+	@echo "PostgreSQL listo"
+	@echo "[7/9] Desplegando API..."
+	kubectl apply -f $(K8S_DIR)/deployment.yaml
+	@echo "[8/9] Creando Service de la API..."
+	kubectl apply -f $(K8S_DIR)/service.yaml
+	@echo "[9/9] Esperando a que la API esté lista (timeout: 120s)..."
+	kubectl wait --for=condition=ready pod -l app=notes --timeout=120s || \
+		(echo "API no está lista. Ver logs con: make k8s-logs-api" && exit 1)
+	@echo "API lista"
+	@echo "Despliegue completado exitosamente"
+	@kubectl get all
+	@echo "Para acceder a la aplicación, ejecuta: make k8s-port-forward"
+
+.PHONY: k8s-deploy-all
+k8s-deploy-all: k8s-start k8s-build k8s-deploy ## Pipeline completo: Start + Build + Deploy
+	@echo "Pipeline completo de Kubernetes ejecutado exitosamente"
+
+.PHONY: k8s-undeploy
+k8s-undeploy: ## Elimina todos los recursos de Kubernetes
+	@echo "Eliminando recursos de Kubernetes..."
+	kubectl delete -f $(K8S_DIR)/ || true
+	@echo "Recursos eliminados"
+	@kubectl get all
+
+.PHONY: k8s-port-forward
+k8s-port-forward: ## Inicia port-forward para acceder a la aplicación (Ctrl+C para detener)
+	@echo "Iniciando port-forward en http://localhost:$(PORT_FORWARD_PORT)"
+	@echo "Presiona Ctrl+C para detener"
+	kubectl port-forward service/notes-service $(PORT_FORWARD_PORT):80
+
+.PHONY: k8s-status-all
+k8s-status-all: ## Muestra el estado de todos los recursos
+	@echo "Estado de recursos en Kubernetes"
+	@echo "PODS:"
+	@kubectl get pods
+	@echo "SERVICES:"
+	@kubectl get svc
+	@echo "DEPLOYMENTS:"
+	@kubectl get deployments
+	@echo "PERSISTENT VOLUME CLAIMS:"
+	@kubectl get pvc
+	@echo "CONFIGMAPS & SECRETS:"
+	@kubectl get configmaps,secrets | grep notes
+
+.PHONY: k8s-logs-api
+k8s-logs-api: ## Muestra los logs de la API
+	@echo "Logs de la API (últimas 50 líneas):"
+	@kubectl logs -l app=notes --tail=50
+
+.PHONY: k8s-logs-postgres
+k8s-logs-postgres: ## Muestra los logs de PostgreSQL
+	@echo "Logs de PostgreSQL (últimas 50 líneas):"
+	@kubectl logs -l app=postgres --tail=50
+
+.PHONY: k8s-describe-api
+k8s-describe-api: ## Describe el pod de la API
+	@kubectl describe pod -l app=notes
+
+.PHONY: k8s-describe-postgres
+k8s-describe-postgres: ## Describe el pod de PostgreSQL
+	@kubectl describe pod -l app=postgres
+
+.PHONY: k8s-reset
+k8s-reset: k8s-undeploy k8s-delete k8s-start ## Reset completo (elimina cluster y lo recrea)
+	@echo "Reset completado - Cluster recreado"
